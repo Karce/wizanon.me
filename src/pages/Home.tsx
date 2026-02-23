@@ -50,7 +50,7 @@ const tools = [
     description: 'Find out when you can reach financial independence and retire early.',
     icon: '🔥',
     to: '/fire-calculator',
-    available: false,
+    available: true,
   },
   {
     title: 'Inflation Adjuster',
