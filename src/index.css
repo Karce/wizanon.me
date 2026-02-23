@@ -63,6 +63,7 @@ button {
 
 input[type="number"],
 input[type="text"],
+input[type="month"],
 select {
   background: var(--bg-input);
   border: 1px solid var(--border);
@@ -75,6 +76,7 @@ select {
 
 input[type="number"]:focus,
 input[type="text"]:focus,
+input[type="month"]:focus,
 select:focus {
   outline: none;
   border-color: var(--accent-purple);
