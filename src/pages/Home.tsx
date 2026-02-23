@@ -73,6 +73,13 @@ const tools = [
     to: '/savings-goal',
     available: false,
   },
+  {
+    title: 'Net Worth Tracker',
+    description: 'Track your assets and liabilities over time. Export and import CSV. All local.',
+    icon: '📊',
+    to: '/net-worth',
+    available: true,
+  },
 ]
 
 function Home() {
