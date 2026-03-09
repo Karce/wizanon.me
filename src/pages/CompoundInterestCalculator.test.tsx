@@ -31,18 +31,19 @@ vi.mock('recharts', () => ({
 
 // ---------------------------------------------------------------------------
 // Pure calculate() logic tests
+// calculate(principal, annualRate, years, contributionAmount, contributionsPerYear, compoundingFrequency)
 // ---------------------------------------------------------------------------
 
 describe('calculate() – data structure', () => {
   it('returns year 0 through year N inclusive (N+1 points)', () => {
-    const data = calculate(1000, 7, 5, 0, 12)
+    const data = calculate(1000, 7, 5, 0, 12, 12)
     expect(data).toHaveLength(6)
     expect(data[0].year).toBe(0)
     expect(data[5].year).toBe(5)
   })
 
   it('year 0 equals initial state regardless of rate or contributions', () => {
-    const data = calculate(5000, 10, 10, 200, 12)
+    const data = calculate(5000, 10, 10, 200, 12, 12)
     expect(data[0]).toEqual({
       year: 0,
       totalContributions: 5000,
@@ -54,7 +55,7 @@ describe('calculate() – data structure', () => {
 
 describe('calculate() – principal only (no contributions)', () => {
   it('annual compounding 10% for 1 year: 1000 → 1100', () => {
-    const result = calculate(1000, 10, 1, 0, 1)[1]
+    const result = calculate(1000, 10, 1, 0, 12, 1)[1]
     expect(result.totalValue).toBe(1100)
     expect(result.totalContributions).toBe(1000)
     expect(result.interestEarned).toBe(100)
@@ -62,34 +63,34 @@ describe('calculate() – principal only (no contributions)', () => {
 
   it('monthly compounding 12% for 1 year: 1000 → ~1126.83', () => {
     // (1 + 0.12/12)^12 = 1.01^12 ≈ 1.126825030
-    const result = calculate(1000, 12, 1, 0, 12)[1]
+    const result = calculate(1000, 12, 1, 0, 12, 12)[1]
     expect(result.totalValue).toBeCloseTo(1126.83, 1)
     expect(result.totalContributions).toBe(1000)
   })
 
   it('quarterly compounding 8% for 1 year: 1000 → ~1082.43', () => {
     // (1 + 0.08/4)^4 = (1.02)^4 = 1.08243216
-    const result = calculate(1000, 8, 1, 0, 4)[1]
+    const result = calculate(1000, 8, 1, 0, 12, 4)[1]
     expect(result.totalValue).toBeCloseTo(1082.43, 1)
     expect(result.interestEarned).toBeCloseTo(82.43, 1)
   })
 
   it('semi-annual compounding 10% for 1 year: 1000 → ~1102.5', () => {
     // (1 + 0.1/2)^2 = (1.05)^2 = 1.1025
-    const result = calculate(1000, 10, 1, 0, 2)[1]
+    const result = calculate(1000, 10, 1, 0, 12, 2)[1]
     expect(result.totalValue).toBeCloseTo(1102.5, 1)
   })
 
   it('daily compounding 6% for 1 year: ~1061.83', () => {
     // (1 + 0.06/365)^365 ≈ 1.0618313
-    const result = calculate(1000, 6, 1, 0, 365)[1]
+    const result = calculate(1000, 6, 1, 0, 12, 365)[1]
     expect(result.totalValue).toBeCloseTo(1061.83, 1)
   })
 })
 
 describe('calculate() – zero rate edge cases', () => {
   it('zero rate, no contributions: principal stays constant', () => {
-    const data = calculate(1000, 0, 5, 0, 12)
+    const data = calculate(1000, 0, 5, 0, 12, 12)
     for (const point of data) {
       expect(point.totalValue).toBe(1000)
       expect(point.interestEarned).toBe(0)
@@ -98,7 +99,7 @@ describe('calculate() – zero rate edge cases', () => {
 
   it('zero rate with contributions: linear growth, no interest', () => {
     // 100/mo × 12 × 3 years = 3600 contributions
-    const result = calculate(1000, 0, 3, 100, 12)[3]
+    const result = calculate(1000, 0, 3, 100, 12, 12)[3]
     expect(result.totalContributions).toBe(4600)   // 1000 + 3600
     expect(result.totalValue).toBe(4600)
     expect(result.interestEarned).toBe(0)
@@ -107,18 +108,18 @@ describe('calculate() – zero rate edge cases', () => {
 
 describe('calculate() – zero principal edge cases', () => {
   it('zero principal, no contributions, any rate: always zero', () => {
-    const result = calculate(0, 10, 5, 0, 12)[5]
+    const result = calculate(0, 10, 5, 0, 12, 12)[5]
     expect(result.totalValue).toBe(0)
     expect(result.totalContributions).toBe(0)
     expect(result.interestEarned).toBe(0)
   })
 
   it('zero principal with contributions earns interest correctly', () => {
-    // 2 years, annually, 10%, $100/mo contribution
-    // contributionPerPeriod = 100 * 12 = 1200
+    // 2 years, annually, 10%, $100/mo contribution (contributionsPerYear=12)
+    // contributionPerPeriod = 100 * (12/1) = 1200
     // fvContributions = 1200 * ((1.1)^2 - 1) / 0.1 = 1200 * 2.1 = 2520
     // totalContributions = 100 * 12 * 2 = 2400
-    const result = calculate(0, 10, 2, 100, 1)[2]
+    const result = calculate(0, 10, 2, 100, 12, 1)[2]
     expect(result.totalValue).toBeCloseTo(2520, 1)
     expect(result.totalContributions).toBe(2400)
     expect(result.interestEarned).toBeCloseTo(120, 1)
@@ -127,8 +128,8 @@ describe('calculate() – zero principal edge cases', () => {
 
 describe('calculate() – zero contribution', () => {
   it('zero contribution: only principal compounds', () => {
-    const withContrib = calculate(1000, 7, 10, 100, 12)[10]
-    const noContrib = calculate(1000, 7, 10, 0, 12)[10]
+    const withContrib = calculate(1000, 7, 10, 100, 12, 12)[10]
+    const noContrib = calculate(1000, 7, 10, 0, 12, 12)[10]
     expect(noContrib.totalValue).toBeLessThan(withContrib.totalValue)
     expect(noContrib.totalContributions).toBe(1000)
   })
@@ -136,10 +137,10 @@ describe('calculate() – zero contribution', () => {
 
 describe('calculate() – compounding frequency effects', () => {
   it('higher compounding frequency yields higher final value', () => {
-    const annually = calculate(1000, 10, 5, 0, frequencies.annually)[5].totalValue
-    const quarterly = calculate(1000, 10, 5, 0, frequencies.quarterly)[5].totalValue
-    const monthly = calculate(1000, 10, 5, 0, frequencies.monthly)[5].totalValue
-    const daily = calculate(1000, 10, 5, 0, frequencies.daily)[5].totalValue
+    const annually = calculate(1000, 10, 5, 0, 12, frequencies.annually)[5].totalValue
+    const quarterly = calculate(1000, 10, 5, 0, 12, frequencies.quarterly)[5].totalValue
+    const monthly = calculate(1000, 10, 5, 0, 12, frequencies.monthly)[5].totalValue
+    const daily = calculate(1000, 10, 5, 0, 12, frequencies.daily)[5].totalValue
 
     expect(annually).toBeLessThan(quarterly)
     expect(quarterly).toBeLessThan(monthly)
@@ -147,17 +148,17 @@ describe('calculate() – compounding frequency effects', () => {
   })
 
   it('annually vs monthly compounding produce measurably different results', () => {
-    const annually = calculate(10000, 8, 20, 0, 1)[20].totalValue
-    const monthly = calculate(10000, 8, 20, 0, 12)[20].totalValue
+    const annually = calculate(10000, 8, 20, 0, 12, 1)[20].totalValue
+    const monthly = calculate(10000, 8, 20, 0, 12, 12)[20].totalValue
     expect(monthly).toBeGreaterThan(annually)
     // monthly should be noticeably higher (several hundred dollars for $10k)
     expect(monthly - annually).toBeGreaterThan(100)
   })
 
   it('semi-annual compounding result is between annual and quarterly', () => {
-    const annually = calculate(1000, 10, 1, 0, 1)[1].totalValue
-    const semiannually = calculate(1000, 10, 1, 0, 2)[1].totalValue
-    const quarterly = calculate(1000, 10, 1, 0, 4)[1].totalValue
+    const annually = calculate(1000, 10, 1, 0, 12, 1)[1].totalValue
+    const semiannually = calculate(1000, 10, 1, 0, 12, 2)[1].totalValue
+    const quarterly = calculate(1000, 10, 1, 0, 12, 4)[1].totalValue
     expect(semiannually).toBeGreaterThan(annually)
     expect(semiannually).toBeLessThan(quarterly)
   })
@@ -169,22 +170,22 @@ describe('calculate() – contribution per-period scaling', () => {
     // contributionPerPeriod = 100 * (12/1) = 1200
     // Year 1: 1200 contributions arrived at end of period → no interest growth yet
     // (annuity-immediate: payment at end of each period)
-    const result = calculate(0, 10, 1, 100, 1)[1]
+    const result = calculate(0, 10, 1, 100, 12, 1)[1]
     expect(result.totalContributions).toBe(1200)
     expect(result.totalValue).toBeCloseTo(1200, 0)
   })
 
   it('quarterly compounding: each quarter receives 3 months of contributions', () => {
     // contributionPerPeriod = 100 * (12/4) = 300
-    const result = calculate(0, 10, 2, 100, 4)[2]
+    const result = calculate(0, 10, 2, 100, 12, 4)[2]
     expect(result.totalContributions).toBe(2400)
     expect(result.totalValue).toBeGreaterThan(2400) // earns some interest
   })
 
   it('different compounding frequencies produce different results for same contribution', () => {
-    const annually = calculate(0, 8, 10, 200, frequencies.annually)[10].totalValue
-    const quarterly = calculate(0, 8, 10, 200, frequencies.quarterly)[10].totalValue
-    const monthly = calculate(0, 8, 10, 200, frequencies.monthly)[10].totalValue
+    const annually = calculate(0, 8, 10, 200, 12, frequencies.annually)[10].totalValue
+    const quarterly = calculate(0, 8, 10, 200, 12, frequencies.quarterly)[10].totalValue
+    const monthly = calculate(0, 8, 10, 200, 12, frequencies.monthly)[10].totalValue
 
     expect(annually).not.toBe(quarterly)
     expect(quarterly).not.toBe(monthly)
@@ -193,7 +194,7 @@ describe('calculate() – contribution per-period scaling', () => {
 
 describe('calculate() – large numbers', () => {
   it('handles large principal without NaN or Infinity', () => {
-    const result = calculate(1_000_000, 7, 30, 10_000, 12)[30]
+    const result = calculate(1_000_000, 7, 30, 10_000, 12, 12)[30]
     expect(Number.isFinite(result.totalValue)).toBe(true)
     expect(Number.isNaN(result.totalValue)).toBe(false)
     expect(result.totalValue).toBeGreaterThan(1_000_000)
@@ -202,7 +203,7 @@ describe('calculate() – large numbers', () => {
 
 describe('calculate() – single year', () => {
   it('returns exactly 2 data points for 1 year', () => {
-    const data = calculate(5000, 5, 1, 200, 4)
+    const data = calculate(5000, 5, 1, 200, 12, 4)
     expect(data).toHaveLength(2)
     expect(data[0].year).toBe(0)
     expect(data[1].year).toBe(1)
@@ -211,7 +212,7 @@ describe('calculate() – single year', () => {
 
 describe('calculate() – totalContributions formula', () => {
   it('tracks principal + monthly contributions * months elapsed', () => {
-    const data = calculate(500, 7, 3, 100, 12)
+    const data = calculate(500, 7, 3, 100, 12, 12)
     expect(data[0].totalContributions).toBe(500)
     expect(data[1].totalContributions).toBe(1700)   // 500 + 100*12
     expect(data[2].totalContributions).toBe(2900)   // 500 + 100*24
@@ -274,15 +275,17 @@ describe('CompoundInterestCalculator – rendering', () => {
     expect(input.type).toBe('number')
   })
 
-  it('renders Compounding Frequency select defaulting to monthly', () => {
-    const select = screen.getByRole('combobox') as HTMLSelectElement
-    expect(select).toBeInTheDocument()
-    expect(select.value).toBe('monthly')
+  it('renders Compounding Frequency select defaulting to annually', () => {
+    const selects = screen.getAllByRole('combobox') as HTMLSelectElement[]
+    const compoundingSelect = selects[selects.length - 1]
+    expect(compoundingSelect).toBeInTheDocument()
+    expect(compoundingSelect.value).toBe('annually')
   })
 
   it('compounding frequency dropdown has all required options', () => {
-    const select = screen.getByRole('combobox')
-    const options = Array.from(select.querySelectorAll('option')).map((o) => o.value)
+    const selects = screen.getAllByRole('combobox')
+    const compoundingSelect = selects[selects.length - 1]
+    const options = Array.from(compoundingSelect.querySelectorAll('option')).map((o) => o.value)
     expect(options).toContain('annually')
     expect(options).toContain('semiannually')
     expect(options).toContain('quarterly')
@@ -345,27 +348,29 @@ describe('CompoundInterestCalculator – user interactions', () => {
 
   it('changing compounding frequency updates the Final Amount', () => {
     render(<CompoundInterestCalculator />)
-    const select = screen.getByRole('combobox')
+    const selects = screen.getAllByRole('combobox')
+    const compoundingSelect = selects[selects.length - 1]
     const finalAmountLabel = screen.getByText('Final Amount')
 
-    const monthlyValue = finalAmountLabel.nextElementSibling?.textContent
-
-    fireEvent.change(select, { target: { value: 'annually' } })
     const annuallyValue = finalAmountLabel.nextElementSibling?.textContent
 
-    expect(annuallyValue).not.toBe(monthlyValue)
+    fireEvent.change(compoundingSelect, { target: { value: 'monthly' } })
+    const monthlyValue = finalAmountLabel.nextElementSibling?.textContent
+
+    expect(monthlyValue).not.toBe(annuallyValue)
   })
 
   it('switching to daily compounding gives higher result than monthly', () => {
     render(<CompoundInterestCalculator />)
-    const select = screen.getByRole('combobox')
+    const selects = screen.getAllByRole('combobox')
+    const compoundingSelect = selects[selects.length - 1]
     const finalAmountLabel = screen.getByText('Final Amount')
     const parse = (s: string) => Number(s.replace(/[$,]/g, ''))
 
-    fireEvent.change(select, { target: { value: 'monthly' } })
+    fireEvent.change(compoundingSelect, { target: { value: 'monthly' } })
     const monthlyText = finalAmountLabel.nextElementSibling?.textContent ?? ''
 
-    fireEvent.change(select, { target: { value: 'daily' } })
+    fireEvent.change(compoundingSelect, { target: { value: 'daily' } })
     const dailyText = finalAmountLabel.nextElementSibling?.textContent ?? ''
 
     expect(parse(dailyText)).toBeGreaterThan(parse(monthlyText))
@@ -373,14 +378,15 @@ describe('CompoundInterestCalculator – user interactions', () => {
 
   it('switching to annually compounding gives lower result than monthly', () => {
     render(<CompoundInterestCalculator />)
-    const select = screen.getByRole('combobox')
+    const selects = screen.getAllByRole('combobox')
+    const compoundingSelect = selects[selects.length - 1]
     const finalAmountLabel = screen.getByText('Final Amount')
     const parse = (s: string) => Number(s.replace(/[$,]/g, ''))
 
-    fireEvent.change(select, { target: { value: 'monthly' } })
+    fireEvent.change(compoundingSelect, { target: { value: 'monthly' } })
     const monthlyText = finalAmountLabel.nextElementSibling?.textContent ?? ''
 
-    fireEvent.change(select, { target: { value: 'annually' } })
+    fireEvent.change(compoundingSelect, { target: { value: 'annually' } })
     const annuallyText = finalAmountLabel.nextElementSibling?.textContent ?? ''
 
     expect(parse(annuallyText)).toBeLessThan(parse(monthlyText))
@@ -402,13 +408,14 @@ describe('CompoundInterestCalculator – user interactions', () => {
 
   it('all five compounding options produce distinct final amounts', () => {
     render(<CompoundInterestCalculator />)
-    const select = screen.getByRole('combobox')
+    const selects = screen.getAllByRole('combobox')
+    const compoundingSelect = selects[selects.length - 1]
     const finalAmountLabel = screen.getByText('Final Amount')
     const parse = (s: string) => Number(s.replace(/[$,]/g, ''))
 
     const values: Record<string, number> = {}
     for (const freq of ['annually', 'semiannually', 'quarterly', 'monthly', 'daily']) {
-      fireEvent.change(select, { target: { value: freq } })
+      fireEvent.change(compoundingSelect, { target: { value: freq } })
       values[freq] = parse(finalAmountLabel.nextElementSibling?.textContent ?? '')
     }
 

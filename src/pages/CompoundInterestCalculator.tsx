@@ -25,11 +25,20 @@ export const frequencies: Record<string, number> = {
   daily: 365,
 }
 
+const contributionFrequencies: Record<string, { label: string; perYear: number }> = {
+  weekly: { label: 'Weekly', perYear: 52 },
+  biweekly: { label: 'Biweekly', perYear: 26 },
+  monthly: { label: 'Monthly', perYear: 12 },
+  quarterly: { label: 'Quarterly', perYear: 4 },
+  annually: { label: 'Annual', perYear: 1 },
+}
+
 export function calculate(
   principal: number,
   annualRate: number,
   years: number,
-  monthlyContribution: number,
+  contributionAmount: number,
+  contributionsPerYear: number,
   compoundingFrequency: number,
 ): ChartPoint[] {
   const data: ChartPoint[] = []
@@ -43,21 +52,22 @@ export function calculate(
     // Future value of principal
     const fvPrincipal = principal * Math.pow(1 + r / n, n * t)
 
-    // Future value of monthly contributions (annuity)
+    // Future value of periodic contributions (annuity)
+    // Convert contribution to per-compounding-period amount
     let fvContributions = 0
-    if (monthlyContribution > 0 && r > 0) {
+    if (contributionAmount > 0 && r > 0) {
       const periodicRate = r / n
       const totalPeriods = n * t
-      const contributionPerPeriod = monthlyContribution * (12 / n)
+      const contributionPerPeriod = contributionAmount * (contributionsPerYear / n)
       fvContributions =
         contributionPerPeriod *
         ((Math.pow(1 + periodicRate, totalPeriods) - 1) / periodicRate)
-    } else if (monthlyContribution > 0 && r === 0) {
-      fvContributions = monthlyContribution * 12 * t
+    } else if (contributionAmount > 0 && r === 0) {
+      fvContributions = contributionAmount * contributionsPerYear * t
     }
 
     const totalValue = fvPrincipal + fvContributions
-    const totalContributions = principal + monthlyContribution * 12 * year
+    const totalContributions = principal + contributionAmount * contributionsPerYear * year
 
     data.push({
       year,
@@ -77,6 +87,11 @@ const formatCurrency = (value: number): string =>
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   })
+
+function parseNum(s: string, fallback = 0): number {
+  const n = parseFloat(s)
+  return isNaN(n) ? fallback : n
+}
 
 const pageStyle: React.CSSProperties = {
   maxWidth: '720px',
@@ -157,15 +172,24 @@ const chartTitle: React.CSSProperties = {
 }
 
 function CompoundInterestCalculator() {
-  const [principal, setPrincipal] = useState(10000)
-  const [rate, setRate] = useState(7)
-  const [years, setYears] = useState(20)
-  const [monthlyContribution, setMonthlyContribution] = useState(500)
-  const [frequency, setFrequency] = useState('monthly')
+  const [principal, setPrincipal] = useState('10000')
+  const [rate, setRate] = useState('7')
+  const [years, setYears] = useState('20')
+  const [contributionAmount, setContributionAmount] = useState('500')
+  const [contributionFreq, setContributionFreq] = useState('monthly')
+  const [frequency, setFrequency] = useState('annually')
 
   const data = useMemo(
-    () => calculate(principal, rate, years, monthlyContribution, frequencies[frequency]),
-    [principal, rate, years, monthlyContribution, frequency],
+    () =>
+      calculate(
+        parseNum(principal),
+        parseNum(rate),
+        Math.max(1, Math.round(parseNum(years, 1))),
+        parseNum(contributionAmount),
+        contributionFrequencies[contributionFreq].perYear,
+        frequencies[frequency],
+      ),
+    [principal, rate, years, contributionAmount, contributionFreq, frequency],
   )
 
   const final = data[data.length - 1]
@@ -185,7 +209,7 @@ function CompoundInterestCalculator() {
             min="0"
             step="100"
             value={principal}
-            onChange={(e) => setPrincipal(Number(e.target.value))}
+            onChange={(e) => setPrincipal(e.target.value)}
           />
         </div>
         <div style={fieldStyle}>
@@ -196,7 +220,7 @@ function CompoundInterestCalculator() {
             max="100"
             step="0.1"
             value={rate}
-            onChange={(e) => setRate(Number(e.target.value))}
+            onChange={(e) => setRate(e.target.value)}
           />
         </div>
         <div style={fieldStyle}>
@@ -207,18 +231,30 @@ function CompoundInterestCalculator() {
             max="100"
             step="1"
             value={years}
-            onChange={(e) => setYears(Number(e.target.value))}
+            onChange={(e) => setYears(e.target.value)}
           />
         </div>
         <div style={fieldStyle}>
-          <label style={labelStyle}>Monthly Contribution ($)</label>
+          <label style={labelStyle}>
+            {contributionFrequencies[contributionFreq].label} Contribution ($)
+          </label>
           <input
             type="number"
             min="0"
             step="50"
-            value={monthlyContribution}
-            onChange={(e) => setMonthlyContribution(Number(e.target.value))}
+            value={contributionAmount}
+            onChange={(e) => setContributionAmount(e.target.value)}
           />
+        </div>
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Contribution Frequency</label>
+          <select value={contributionFreq} onChange={(e) => setContributionFreq(e.target.value)}>
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Biweekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="annually">Annually</option>
+          </select>
         </div>
         <div style={fieldStyle}>
           <label style={labelStyle}>Compounding Frequency</label>
