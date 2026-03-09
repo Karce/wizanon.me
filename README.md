@@ -1,5 +1,7 @@
 # wizanon.me
 
+[![Tests](https://github.com/Karce/wizanon.me/actions/workflows/test.yml/badge.svg)](https://github.com/Karce/wizanon.me/actions/workflows/test.yml)
+
 **Financial tools that mind their own business.**
 
 Wizanon (_wizard_ + _anonymous_) is a suite of privacy-respecting financial tools that run entirely client-side. No accounts, no tracking, no cookies, no server-side processing. Everything executes in the browser. The wizard helps; the wizard asks nothing in return.
@@ -39,6 +41,7 @@ npm install
 npm run dev       # Local dev server
 npm run build     # Production build
 npm run preview   # Preview production build
+npm test          # Run test suite
 ```
 
 ## License

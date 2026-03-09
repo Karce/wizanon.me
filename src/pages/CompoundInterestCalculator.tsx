@@ -17,7 +17,7 @@ interface ChartPoint {
   interestEarned: number
 }
 
-const compoundingFrequencies: Record<string, number> = {
+export const frequencies: Record<string, number> = {
   annually: 1,
   semiannually: 2,
   quarterly: 4,
@@ -33,7 +33,7 @@ const contributionFrequencies: Record<string, { label: string; perYear: number }
   annually: { label: 'Annual', perYear: 1 },
 }
 
-function calculate(
+export function calculate(
   principal: number,
   annualRate: number,
   years: number,
@@ -87,6 +87,11 @@ const formatCurrency = (value: number): string =>
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   })
+
+function parseNum(s: string, fallback = 0): number {
+  const n = parseFloat(s)
+  return isNaN(n) ? fallback : n
+}
 
 const pageStyle: React.CSSProperties = {
   maxWidth: '720px',
@@ -187,7 +192,7 @@ function CompoundInterestCalculator() {
         Math.max(1, Math.round(parseNum(years, 1))),
         parseNum(contributionAmount),
         contributionFrequencies[contributionFreq].perYear,
-        compoundingFrequencies[frequency],
+        frequencies[frequency],
       ),
     [principal, rate, years, contributionAmount, contributionFreq, frequency],
   )
