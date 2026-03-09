@@ -17,7 +17,7 @@ interface ChartPoint {
   interestEarned: number
 }
 
-const frequencies: Record<string, number> = {
+export const frequencies: Record<string, number> = {
   annually: 1,
   semiannually: 2,
   quarterly: 4,
@@ -25,7 +25,7 @@ const frequencies: Record<string, number> = {
   daily: 365,
 }
 
-function calculate(
+export function calculate(
   principal: number,
   annualRate: number,
   years: number,
