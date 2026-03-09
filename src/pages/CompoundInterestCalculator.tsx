@@ -166,21 +166,26 @@ const chartTitle: React.CSSProperties = {
   paddingLeft: '0.5rem',
 }
 
+function parseNum(s: string, fallback = 0): number {
+  const n = parseFloat(s)
+  return isNaN(n) ? fallback : n
+}
+
 function CompoundInterestCalculator() {
-  const [principal, setPrincipal] = useState(10000)
-  const [rate, setRate] = useState(7)
-  const [years, setYears] = useState(20)
-  const [contributionAmount, setContributionAmount] = useState(500)
+  const [principal, setPrincipal] = useState('10000')
+  const [rate, setRate] = useState('7')
+  const [years, setYears] = useState('20')
+  const [contributionAmount, setContributionAmount] = useState('500')
   const [contributionFreq, setContributionFreq] = useState('monthly')
   const [frequency, setFrequency] = useState('annually')
 
   const data = useMemo(
     () =>
       calculate(
-        principal,
-        rate,
-        years,
-        contributionAmount,
+        parseNum(principal),
+        parseNum(rate),
+        Math.max(1, Math.round(parseNum(years, 1))),
+        parseNum(contributionAmount),
         contributionFrequencies[contributionFreq].perYear,
         compoundingFrequencies[frequency],
       ),
@@ -204,7 +209,7 @@ function CompoundInterestCalculator() {
             min="0"
             step="100"
             value={principal}
-            onChange={(e) => setPrincipal(Number(e.target.value))}
+            onChange={(e) => setPrincipal(e.target.value)}
           />
         </div>
         <div style={fieldStyle}>
@@ -215,7 +220,7 @@ function CompoundInterestCalculator() {
             max="100"
             step="0.1"
             value={rate}
-            onChange={(e) => setRate(Number(e.target.value))}
+            onChange={(e) => setRate(e.target.value)}
           />
         </div>
         <div style={fieldStyle}>
@@ -226,7 +231,7 @@ function CompoundInterestCalculator() {
             max="100"
             step="1"
             value={years}
-            onChange={(e) => setYears(Number(e.target.value))}
+            onChange={(e) => setYears(e.target.value)}
           />
         </div>
         <div style={fieldStyle}>
@@ -238,7 +243,7 @@ function CompoundInterestCalculator() {
             min="0"
             step="50"
             value={contributionAmount}
-            onChange={(e) => setContributionAmount(Number(e.target.value))}
+            onChange={(e) => setContributionAmount(e.target.value)}
           />
         </div>
         <div style={fieldStyle}>
