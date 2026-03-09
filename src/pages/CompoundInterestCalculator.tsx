@@ -171,11 +171,6 @@ const chartTitle: React.CSSProperties = {
   paddingLeft: '0.5rem',
 }
 
-function parseNum(s: string, fallback = 0): number {
-  const n = parseFloat(s)
-  return isNaN(n) ? fallback : n
-}
-
 function CompoundInterestCalculator() {
   const [principal, setPrincipal] = useState('10000')
   const [rate, setRate] = useState('7')
